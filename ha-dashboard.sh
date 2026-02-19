@@ -89,7 +89,7 @@ log() {
         # Send as syslog-formatted UDP datagram (facility=local0, severity=info)
         RHOST="${REMOTE_LOG%%:*}"
         RPORT="${REMOTE_LOG##*:}"
-        echo "<134>kindle-dashboard: $MSG" | nc -u -w 0 "$RHOST" "$RPORT" 2>/dev/null &
+        echo "<134>kindle-dashboard: $MSG" | nc "$RHOST" "$RPORT" 2>/dev/null &
     fi
 }
 
