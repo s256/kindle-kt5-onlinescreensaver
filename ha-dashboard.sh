@@ -198,6 +198,11 @@ display_image() {
 
 # ---- MAIN LOOP -------------------------------------------------------------
 
+# Set CPU to powersave governor to reduce power consumption
+if [ -f /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]; then
+    echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null
+fi
+
 log "=== ha-dashboard starting ==="
 log "Image URL: ${IMAGE_URL}"
 log "Refresh interval: ${REFRESH_INTERVAL}s"
