@@ -31,7 +31,7 @@ IMAGE_URL="http://192.168.1.100:5000/image"
 # Seconds between refreshes (default: 900 = 15 minutes)
 REFRESH_INTERVAL=900
 
-# RTC device number (usually 0, try 1 if 0 doesn't work)
+# RTC device number (1 = pmic_rtc, the only RTC that can wake D01200)
 RTC=1
 
 # Turn WiFi off between refreshes to save battery? (1=yes, 0=no)
@@ -61,6 +61,10 @@ LOG_MAX_SIZE=102400
 # Battery percentage at which to stop refreshing and just sleep
 BATTERY_CRITICAL=2
 
+# Remote syslog server (IP:PORT). Logs are sent via UDP.
+# Set to empty string to disable remote logging.
+REMOTE_LOG=""
+
 # Seconds to stay awake after displaying the image before allowing suspend.
 # During this window WiFi stays on so you can SSH in for maintenance.
 AWAKE_DELAY=120
@@ -80,8 +84,13 @@ fi
 log() {
     MSG="$(date '+%Y-%m-%d %H:%M:%S') | $1"
     echo "$MSG"
-    [ "$LOGFILE" = "/dev/null" ] && return
-    echo "$MSG" >> "$LOGFILE"
+    [ "$LOGFILE" = "/dev/null" ] || echo "$MSG" >> "$LOGFILE"
+    if [ -n "$REMOTE_LOG" ]; then
+        # Send as syslog-formatted UDP datagram (facility=local0, severity=info)
+        RHOST="${REMOTE_LOG%%:*}"
+        RPORT="${REMOTE_LOG##*:}"
+        echo "<134>kindle-dashboard: $MSG" | nc -u -w 0 "$RHOST" "$RPORT" 2>/dev/null &
+    fi
 }
 
 rotate_log() {
