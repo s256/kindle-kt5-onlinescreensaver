@@ -1,0 +1,29 @@
+#!/bin/sh
+_FUNCTIONS=/etc/rc.d/functions
+[ -f ${_FUNCTIONS} ] && . ${_FUNCTIONS}
+
+case "$1" in
+	start)
+		PID=`ps xa | grep "onlinescreensaver/bin/scheduler.sh" | grep -v grep | awk '{ print $1 }'`
+		if [ -n "$PID" ]; then
+			echo "killing $PID."
+			ps xa | grep "onlinescreensaver/bin/scheduler.sh" | grep -v grep | awk '{ print $1 }' | xargs kill
+		fi
+		/bin/sh /mnt/base-us/extensions/onlinescreensaver/bin/scheduler.sh &
+   		msg "onlinescreesnaver started" W
+	    	exit
+		;;
+	stop)
+		PID=`ps xa | grep "onlinescreensaver/bin/scheduler.sh" | grep -v grep | awk '{ print $1 }'`
+		if [ -n "$PID" ]; then
+			echo "killing $PID."
+			ps xa | grep "onlinescreensaver/bin/scheduler.sh" | grep -v grep | awk '{ print $1 }' | xargs kill
+		fi
+   		msg "onlinescreesnaver stopped" W
+	    	exit
+		;;
+	*)
+		msg "Usage: $0 {start|stop}" W
+		exit 1
+		;;
+esac

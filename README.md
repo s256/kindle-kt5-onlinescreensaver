@@ -1,6 +1,9 @@
-# kindle-ha-dashboard
+# onlinescreensaver
 
 Displays a Home Assistant dashboard screenshot on a Kindle Touch (D01200) e-ink screen, with battery-optimized sleep/wake cycling.
+Everything you find here is either based on [peterson](https://www.mobileread.com/forums/showthread.php?t=236104)'s work or [StephanStrobel](https://forum.fhem.de/index.php?action=profile;u=3960) from the [great FHEM Community Forum, which delivered the last necessary steps](https://forum.fhem.de/index.php?topic=21821.695).
+
+I'm publishing this here, to conserve the code and make it more accesible for others. 
 
 ## How it works
 
@@ -14,18 +17,17 @@ Displays a Home Assistant dashboard screenshot on a Kindle Touch (D01200) e-ink 
                    │ ?batteryLevel=85&isCharging=No
                    ▼
 ┌─────────────────────────────────────────┐
-│  Kindle D01200 running ha-dashboard.sh  │
+│  Kindle D01200 running onlinescreensaver  │
 │                                         │
 │  1. Wake from suspend (screensaver mode)│
 │  2. Defer powerd suspend                │
 │  3. Read battery level & charging state │
 │  4. Enable WiFi, download image         │
 │  5. Copy image to screensaver folder    │
-│  6. Display image with eips             │
-│  7. Stay awake 120s (SSH window)        │
-│  8. Disable WiFi (if configured)        │
-│  9. rtcwake -a suspends to RAM          │
-│  10. PMIC RTC alarm fires → go to 1    │
+│  6. Display image with eips             │     │
+│  7. Disable WiFi (if configured)        │
+│  8. rtcwake -a suspends to RAM          │
+│  9. PMIC RTC alarm fires → go to 1    │
 └─────────────────────────────────────────┘
 ```
 
@@ -83,10 +85,10 @@ This allows your HA dashboard to display the Kindle's battery state.
 
 | File | Purpose |
 |---|---|
-| `ha-dashboard.sh` | Main script — run this in the background |
+| `scheduler.sh` | Main script — run this in the background |
 | `config.sh` | Your configuration (edit this) |
-| `debug-rtcwake.sh` | Diagnostic script to test which RTC device and flags work on your Kindle |
-| `ha-dashboard.log` | Log file (created at runtime, auto-rotates at 100KB) |
+| `diags.sh` | Diagnostic script to test which RTC device and flags work on your Kindle |
+| `/mnt/us/extensions/onlinescreensaver/diags/onlinescreensaver.log` | Log file (created at runtime) |
 
 ## Installation
 
@@ -94,28 +96,22 @@ This allows your HA dashboard to display the Kindle's battery state.
 
 2. **Copy the folder to the Kindle** via SSH/SCP:
    ```sh
-   scp -r kindle-ha-dashboard root@<kindle-ip>:/mnt/us/extensions/
+   scp -r onlinescreensaver root@<kindle-ip>:/mnt/us/extensions/
    ```
 
-3. **SSH into the Kindle** and make the script executable:
+3. **Run it:**
    ```sh
-   ssh root@<kindle-ip>
-   chmod +x /mnt/us/extensions/kindle-ha-dashboard/ha-dashboard.sh
+   /mnt/us/extensions/onlinescreensaver/bin/scheduler.sh &
    ```
 
-4. **Run it:**
+4. **Check the log** to verify it's working:
    ```sh
-   /mnt/us/extensions/kindle-ha-dashboard/ha-dashboard.sh &
-   ```
-
-5. **Check the log** to verify it's working:
-   ```sh
-   cat /mnt/us/extensions/kindle-ha-dashboard/ha-dashboard.log
+   cat /mnt/us/extensions/onlinescreensaver/diags/onlinescreensaver.log
    ```
 
 ## Configuration
 
-Edit `config.sh` before deploying. All values are also defined with defaults in `ha-dashboard.sh`, so `config.sh` only needs to contain the values you want to override.
+Edit `config.sh` before deploying. All values are also defined with defaults in `scheduler.sh`, so `config.sh` only needs to contain the values you want to override.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -129,14 +125,15 @@ Edit `config.sh` before deploying. All values are also defined with defaults in 
 | `AWAKE_DELAY` | `120` | Seconds to stay awake after displaying the image. Keeps WiFi up so you can SSH in. The device stays in screensaver mode during this window (no taskbar). |
 | `SCREENSAVER_DIR` | `/mnt/us/linkss/screensavers` | Path to the Kindle's screensaver folder (from linkss hack). |
 | `SCREENSAVER_FILE` | `bg_xsmall_ss00.png` | Filename within the screensaver folder to overwrite with our image. |
-| `LOGFILE` | `./ha-dashboard.log` | Log file path. Set to `/dev/null` to disable logging. |
+| `LOGFILE` | `./scheduler.log` | Log file path. Set to `/dev/null` to disable logging. |
 | `LOG_MAX_SIZE` | `102400` | Max log size in bytes before rotation (default 100KB). |
+| `REMOTE_LOG` | None | Configure rsyslog (TCP!) remote host to receive logs. e.g. `192.168.0.5:514`| 
 
 ## Stopping the script
 
 Find and kill the process:
 ```sh
-ps aux | grep ha-dashboard
+ps aux | grep scheduler
 kill <pid>
 ```
 
@@ -178,8 +175,7 @@ To restore normal Kindle operation after stopping the script, press the power bu
 - If the screen looks corrupted, press power button twice (once to exit screensaver, once to re-enter, which triggers a clean redraw)
 
 **Log file:**
-- Read the log: `cat /mnt/us/extensions/kindle-ha-dashboard/ha-dashboard.log`
-- The log auto-rotates; the previous log is kept as `ha-dashboard.log.old`
+- Read the log: `cat /mnt/us/extensions/onlinescreensaver/diags/onlinescreensaver.log`
 
 ## Why not use the onlinescreensaver extension?
 
